@@ -1,0 +1,49 @@
+{{template "header"}}
+{{define "neighbor_detail_row"}}
+  {{ $neighbor := index . 0 }}
+<tr>
+    <td>{{ template "user_link" (arr $neighbor.NodeId)}}</td>
+    <td>{{$neighbor.Snr | snrMeter}}</td>
+</tr>
+{{end}}
+
+{{define "neighbor_row"}}
+  {{ $neighbor := index . 0 }}
+<tr>
+    <td>{{ template "user_link" (arr $neighbor.Underlying.NodeId)}}</td>
+    <td>{{ template "user_link" (arr $neighbor.Underlying.LastSentById)}}</td>
+    <td>{{ $neighbor.RxTime | timeAgoInt}} ago</td>
+    <td>{{ $neighbor.Underlying.NodeBroadcastIntervalSecs}}</td>
+    <td>
+<table>
+<thead>
+
+    <tr>
+    <th>Id</th>
+    <th>Snr</th>
+    </tr>
+    </thead>
+    {{range $neighbor.Underlying.Neighbors}}
+        {{ template "neighbor_detail_row" (arr .) }}
+    {{ end}}
+</table>
+    </td>
+</tr>
+{{end}}
+
+<table>
+<tr>
+<th>Id</th>
+<th>LastSentBy</th>
+<td>Time</td>
+<th>Interval</th>
+<th>Neighbors</th>
+</tr>
+{{range .Neighbors}}
+    {{ template "neighbor_row" (arr .) }}
+{{ end}}
+</table>
+
+
+
+{{template "footer"}}

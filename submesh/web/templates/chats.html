@@ -1,0 +1,19 @@
+{{template "header"}}
+<table>
+  <tr>
+    <th>Time</th>
+    <th>From</th>
+    <th>To</th>
+    <th>Message</th>
+</tr>
+{{range .Chats}}
+  <tr>
+    <td>{{.RxTime | timeAgo }}</td>
+    <td>{{ template "user_link" (arr .From)}}</td>
+    <td>{{ template "user_link" (arr .To)}}</td>
+    <td>{{.Underlying}}</td>
+  </tr>
+{{end}}
+</table>
+
+{{template "footer"}}

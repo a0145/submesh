@@ -1,0 +1,10 @@
+submesh:
+  production: true
+web:
+  port: 8080
+mqtt:
+  host: mqtt.server.com
+  username: user
+  password: pass
+  topics:
+    - "msh/US/#"

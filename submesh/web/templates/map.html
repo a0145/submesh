@@ -1,0 +1,43 @@
+
+{{template "header"}}
+ <div id="map" style="height: 680px"></div>
+
+
+<script type="text/javascript">
+// Create the map
+var map = L.map('map');
+
+// Set up the OSM layer
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+}).addTo(map);
+
+var markers = [];
+
+{{ range .Positions }}
+{{ if .Underlying.LatitudeI }}
+
+
+var marker = L.marker([{{.Underlying.LatitudeI|coordToFloat}}, {{.Underlying.LongitudeI | coordToFloat}}]).addTo(map);
+markers.push(marker);
+
+var circle = L.circle([{{.Underlying.LatitudeI|coordToFloat}}, {{.Underlying.LongitudeI | coordToFloat}}], {
+    color: 'red',
+    fillColor: '#f03',
+    fillOpacity: 0.2,
+    radius: 100*{{.Underlying.PrecisionBits}}
+}).addTo(map);
+marker.bindPopup("<b><a href='/user?id={{.From}}'><minidenticon-svg username='{{.From}}'></minidenticon-svg><br>{{.From | idToShortaddr}}</a><br>{{.From|longNameFromId}}<br>Last Heard: {{.From|lastHeard}} ago</b><br>Altitude: {{.From|lastAltitide}}m").openPopup();
+
+
+{{end}}
+{{end}}
+var group = new L.featureGroup(markers);
+map.fitBounds(group.getBounds());
+
+</script>
+
+
+{{template "footer"}}
+

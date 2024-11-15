@@ -1,0 +1,27 @@
+{{define "summary_table"}}
+  {{ $All := index . 0 }}
+<table>
+  <tr>
+    <th>Time</th>
+    <th>Snr</th>
+    <th>From</th>
+    <th>To</th>
+    <th>PortName</th>
+    <th>Length</th>
+    <th>Enc</th>
+    <th>Summary</th>
+</tr>
+{{range $All}}
+  <tr>
+    <td>{{.RxTime | timeAgo }} ago</td>
+    <td>{{.RxSnr | snrMeter }}</td>
+    <td>{{ template "user_link" (arr .From)}}</td>
+    <td>{{ template "user_link" (arr .To)}}</td>
+    <td>{{.Underlying.PortName}}</td>
+    <td>{{.Underlying.Length}}</td>
+    <td>{{.Underlying.Encrypted}}</td>
+    <td><code>{{.Underlying.Summary}}</code></td>
+  </tr>
+{{end}}
+</table>
+{{end}}

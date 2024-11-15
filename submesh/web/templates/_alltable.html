@@ -1,0 +1,33 @@
+{{define "all_table"}}
+  {{ $All := index . 0 }}
+<table>
+  <tr>
+    <th>Time</th>
+    <th>From</th>
+    <th>To</th>
+    <th>RxSnr</th>
+    <th>HopLimit</th>
+    <th>WantAck</th>
+    <th>Priority</th>
+    <th>PortName</th>
+    <th>Length</th>
+    <th>Enc</th>
+    <th>Summary</th>
+</tr>
+{{range $All }}
+  <tr>
+    <td>{{.RxTime | timeAgo }} ago</td>
+    <td>{{ template "user_link" (arr .From)}}</td>
+    <td>{{ template "user_link" (arr .To)}}</a></td>
+    <td>{{ .RxSnr | snrMeter}}</td>
+    <td>{{.HopStart}}/{{.HopLimit}}</td>
+    <td>{{.WantAck | yesnoemoji}}</td>
+    <td>{{.Priority}}</td>
+    <td>{{.Underlying.PortName}}</td>
+    <td>{{.Underlying.Length}}</td>
+    <td>{{ if eq .Underlying.Encrypted 1}}✅{{else}}❌{{end}}</td>
+    <td><code>{{.Underlying.Summary}}</code></td>
+  </tr>
+{{end}}
+</table>
+{{end}}

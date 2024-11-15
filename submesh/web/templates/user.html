@@ -1,0 +1,178 @@
+{{template "header"}}
+
+<h3>User Info</h3>
+<table>
+
+{{ if .User }}
+<tr>
+
+{{ if .Position }}
+<td>
+ <div id="map" style="width: 500px;height: 500px"></div>
+
+<script type="text/javascript">
+var map = L.map('map');
+
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+}).addTo(map);
+
+var markers = [];
+
+{{ if .Position.Underlying.LatitudeI }}
+
+
+var marker = L.marker([{{.Position.Underlying.LatitudeI|coordToFloat}}, {{.Position.Underlying.LongitudeI | coordToFloat}}]).addTo(map);
+markers.push(marker);
+
+var circle = L.circle([{{.Position.Underlying.LatitudeI|coordToFloat}}, {{.Position.Underlying.LongitudeI | coordToFloat}}], {
+    color: 'red',
+    fillColor: '#f03',
+    fillOpacity: 0.5,
+    radius: 50*{{.Position.Underlying.PrecisionBits}}
+}).addTo(map);
+marker.bindPopup("<b><a href='/user?id={{.Position.From}}'><minidenticon-svg username='{{.Position.From}}'></minidenticon-svg><br>{{.Position.From | idToShortaddr}}</a><br>{{.Position.From|longNameFromId}}<br>Last Heard: {{.Position.From|lastHeard}} ago</b>").openPopup();
+
+
+var group = new L.featureGroup([marker]);
+map.fitBounds(group.getBounds());
+map.zoomOut(0.2*{{.Position.Underlying.PrecisionBits}});
+{{end}}
+
+</script>
+</td>
+{{end}}
+
+<td>
+<h4>Info</h4>
+
+  <table>
+    <tr>
+      <th>Id</th>
+      <th>LongName</th>
+      <th>ShortName</th>
+      <th>HwModel</th>
+      <th>IsLicensed</th>
+      <th>Role</th>
+      <th>Last Heard</th>
+  </tr>
+    <tr>
+      <td><a href="/user?id={{.User.Underlying.Id}}">{{.User.Underlying.Id}}</a></td>
+      <td>{{.User.Underlying.LongName}}</td>
+      {{ $uString := .User.Underlying.Id | prefixedHexIdToUint32 }}
+      <td>{{ template "user_link" (arr $uString)}}</td>
+      <td>{{.User.Underlying.HwModel}}</td>
+      <td>{{.User.Underlying.IsLicensed}}</td>
+      <td>{{.User.Underlying.Role}}</td>
+      <td>{{.User.RxTime | timeAgo }}</td>
+    </tr>
+  </table>
+
+{{ if .Telemetry }}
+<h4>Telemetry</h4>
+
+<table>
+  <tr>
+    <th>Id</th>
+    <th>Received</th>
+    <th>Battery Level</th>
+    <th>Voltage</th>
+    <th>Channel Utilization</th>
+    <th>Air Util Tx</th>
+    <th>Uptime</th>
+    <th>Air Quality</th>
+    <th>Temp</th>
+    <th>Humidity</th>
+    <th>Pressure</th>
+    <th>Gas</th>
+    <th>IAQ</th>
+    <th>Power</th>
+    <th>Local Stats</th>
+    <th>Health</th>
+</tr>
+  <tr>
+    <td>{{ template "user_link" (arr .Telemetry.From)}}</td>
+    <td>{{.Telemetry.RxTime | timeAgo}}</td>
+    {{ $deviceMetrics := (.Telemetry.Underlying.GetDeviceMetrics) }}
+    {{ if $deviceMetrics }}
+    <td>{{ if $deviceMetrics.BatteryLevel }}<meter min="0" max="100" low="30" value="{{ $deviceMetrics.BatteryLevel }}">{{ $deviceMetrics.BatteryLevel }}</meter><br>{{ $deviceMetrics.BatteryLevel }}%{{end}}</td>
+    <td>{{if $deviceMetrics.Voltage}}{{ $deviceMetrics.Voltage}} V{{end}}</td>
+    <td>{{if $deviceMetrics.ChannelUtilization}}<meter min="0" max="100" value="{{ $deviceMetrics.ChannelUtilization|emptyNilFloat32}}"></meter><br>{{ $deviceMetrics.ChannelUtilization|emptyNilFloat32}}%{{end}}</td>
+    <td>{{if $deviceMetrics.AirUtilTx}}<meter min="0" max="100" value="{{ $deviceMetrics.AirUtilTx|emptyNilFloat32}}"></meter><br>{{ $deviceMetrics.AirUtilTx|emptyNilFloat32}}%{{end}}</td>
+    <td>{{if $deviceMetrics.UptimeSeconds}}{{ $deviceMetrics.UptimeSeconds | timeUptime  }}{{end}}</td>
+    {{ else }}
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    {{ end }}
+    {{ $airQualityMetrics := (.Telemetry.Underlying.GetAirQualityMetrics) }}
+    {{ if $airQualityMetrics }}
+    <td>{{ $airQualityMetrics.String }}</td>
+    {{ else }}
+    <td></td>
+    {{ end }}
+    {{ $environmentMetrics := (.Telemetry.Underlying.GetEnvironmentMetrics) }}
+    {{ if $environmentMetrics }}
+    <td>{{ if $environmentMetrics.Temperature }}{{ $environmentMetrics.Temperature| emptyNilFloat32}}°C{{end}}</td>
+    <td>{{ if $environmentMetrics.RelativeHumidity}}{{ $environmentMetrics.RelativeHumidity|emptyNilFloat32}}%{{end}}</td>
+    <td>{{ if $environmentMetrics.BarometricPressure}}{{ $environmentMetrics.BarometricPressure|emptyNilFloat32}} hPa{{end}}</td>
+    <td>{{ if $environmentMetrics.GasResistance}}{{ $environmentMetrics.GasResistance|emptyNilFloat32}} Ohm{{end}}</td>
+    <td>{{ if $environmentMetrics.Iaq}}{{ $environmentMetrics.Iaq}} AqI{{end}}</td>
+    {{ else }}
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    {{ end }}
+    {{ $powerMetrics := (.Telemetry.Underlying.GetPowerMetrics) }}
+    {{ if $powerMetrics }}
+    <td>{{ $powerMetrics.String }}</td>
+    {{ else }}
+    <td></td>
+    {{ end }}
+    {{ $localstats := (.Telemetry.Underlying.GetLocalStats) }}
+    {{ if $localstats }}
+    <td>{{ $localstats.String }}</td>
+    {{ else }}
+    <td></td>
+    {{ end }}
+    {{ $healthMetrics := (.Telemetry.Underlying.GetHealthMetrics) }}
+    {{ if $healthMetrics }}
+    <td>{{ $healthMetrics.String }}</td>
+    {{ else }}
+    <td></td>
+    {{ end }}
+  </tr>
+</table>
+{{end}}
+{{ if .Position }}
+<h4> Location</h4>
+{{.Position.Underlying.String}}
+{{end}}
+
+  {{ else }}
+  Unknown User
+  {{ end }} 
+</td>
+</tr>
+</table>
+  {{ if .User }}
+  <table>
+  <tr>
+  <td valign="top">
+  <h3>Recent Messages From {{ .User.Underlying.ShortName }}</h3>
+  {{template "summary_table" (arr .FromMsgs) }}
+  </td>
+  <td valign="top">
+
+  <h3>Recent Messages To {{ .User.Underlying.ShortName }}</h3>
+  {{template "summary_table" (arr .ToMsgs) }}
+  </td>
+  </tr>
+  </table>
+  {{ end }}
+{{template "footer"}}

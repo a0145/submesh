@@ -1,0 +1,20 @@
+{{template "header"}}
+<table>
+  <tr>
+    <th>Time</th>
+    <th>From</th>
+    <th>To</th>
+    <th>Channel</th>
+    <th>Length</th>
+</tr>
+{{range .NonDecryptable}}
+  <tr>
+    <td>{{.RxTime | timeAgo }}</td>
+    <td>{{ template "user_link" (arr .From)}}</td>
+    <td>{{ template "user_link" (arr .To)}}</td>
+    <td>{{.Channel}}</td>
+    <td>{{.Underlying}}</td>
+  </tr>
+{{end}}
+</table>
+{{template "footer"}}

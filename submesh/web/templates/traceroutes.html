@@ -1,0 +1,56 @@
+{{template "header"}}
+<table>
+  <tr>
+    <th>From</th>
+    <th>To</th>
+    <th>Time</th>
+    <th>Route To</th>
+    <th>Route From</th>
+</tr>
+{{range .Traceroutes}}
+  <tr>
+    <td>{{ template "user_link" (arr .From)}}</td>
+    <td>{{ template "user_link" (arr .To)}}</td>
+    <td>{{.RxTime | timeAgo }} ago</td>
+
+    <td>
+        <table>
+            <tr>
+                <th>Num</th>
+                <th>From</th>
+                <th>Snr Towards</th>
+            </tr>
+                {{ $routeTo := .Underlying | tracerouteTo }}
+
+                {{range $routeTo}}
+                <tr>
+                    <td>{{ .Num }}</td>
+                    <td>{{ template "user_link" (arr .First)}}</td>
+                    <td>{{ .Second }}</td>
+                {{end}}
+                </tr>
+        </table>
+    </td>
+
+    <td>
+        <table>
+            <tr>
+                <th>Num</th>
+                <th>From</th>
+                <th>Snr From</th>
+            </tr>
+                {{ $routeFrom := .Underlying | tracerouteFrom }}
+
+                {{range $routeFrom}}
+                <tr>
+                    <td>{{ .Num }}</td>
+                    <td>{{ template "user_link" (arr .First)}}</td>
+                    <td>{{ .Second }}</td>
+                {{end}}
+                </tr>
+        </table>
+    </td>
+  </tr>
+{{end}}
+</table>
+{{template "footer"}}

@@ -1,0 +1,26 @@
+{{template "header"}}
+<table>
+  <tr>
+    <th>Id</th>
+    <th>LongName</th>
+    <th>ShortName</th>
+    <th>HwModel</th>
+    <th>IsLicensed</th>
+    <th>Role</th>
+    <th>Last Heard</th>
+</tr>
+{{range .Users}}
+  <tr>
+    <td><a href="/user?id={{.Underlying.Id}}">{{.Underlying.Id}}</a></td>
+    <td>{{.Underlying.LongName}}</td>
+    {{ $uString := .Underlying.Id | prefixedHexIdToUint32 }}
+    <td>{{ template "user_link" (arr $uString)}}</td>
+    <td>{{.Underlying.HwModel}}</td>
+    <td>{{.Underlying.IsLicensed}}</td>
+    <td>{{.Underlying.Role}}</td>
+    <td>{{.RxTime | timeAgo }}</td>
+  </tr>
+{{end}}
+</table>
+
+{{template "footer"}}

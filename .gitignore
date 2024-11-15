@@ -1,0 +1,4 @@
+*.exe
+config.yaml
+*.b64lines
+Makefile

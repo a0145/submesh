@@ -1,0 +1,1 @@
+{{define "user_link"}}{{ $id := index . 0 }}{{ if eq 4294967295 $id }}<center>All</center>{{ else }}<center><a href="/user?id={{$id}}"><minidenticon-svg username="{{$id}}"></minidenticon-svg><br>{{$id | idToShortaddr}}</a></center>{{end}}{{end}}

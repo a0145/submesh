@@ -1,0 +1,80 @@
+{{template "header"}}
+<table>
+  <tr>
+    <th>Id</th>
+    <th>Received</th>
+    <th>Battery Level</th>
+    <th>Voltage</th>
+    <th>Channel Utilization</th>
+    <th>Air Util Tx</th>
+    <th>Uptime</th>
+    <th>Air Quality</th>
+    <th>Temp</th>
+    <th>Humidity</th>
+    <th>Pressure</th>
+    <th>Gas</th>
+    <th>IAQ</th>
+    <th>Power</th>
+    <th>Local Stats</th>
+    <th>Health</th>
+</tr>
+{{range .Telemetry}}
+  <tr>
+    <td>{{ template "user_link" (arr .From)}}</td>
+    <td>{{.RxTime | timeAgo}}</td>
+    {{ $deviceMetrics := (.Underlying.GetDeviceMetrics) }}
+    {{ if $deviceMetrics }}
+    <td>{{ if $deviceMetrics.BatteryLevel }}<meter min="0" max="100" low="30" value="{{ $deviceMetrics.BatteryLevel }}">{{ $deviceMetrics.BatteryLevel }}</meter><br>{{ $deviceMetrics.BatteryLevel }}%{{end}}</td>
+    <td>{{if $deviceMetrics.Voltage}}{{ $deviceMetrics.Voltage}} V{{end}}</td>
+    <td>{{if $deviceMetrics.ChannelUtilization}}<meter min="0" max="100" value="{{ $deviceMetrics.ChannelUtilization|emptyNilFloat32}}"></meter><br>{{ $deviceMetrics.ChannelUtilization|emptyNilFloat32}}%{{end}}</td>
+    <td>{{if $deviceMetrics.AirUtilTx}}<meter min="0" max="100" value="{{ $deviceMetrics.AirUtilTx|emptyNilFloat32}}"></meter><br>{{ $deviceMetrics.AirUtilTx|emptyNilFloat32}}%{{end}}</td>
+    <td>{{if $deviceMetrics.UptimeSeconds}}{{ $deviceMetrics.UptimeSeconds | timeUptime  }}{{end}}</td>
+    {{ else }}
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    {{ end }}
+    {{ $airQualityMetrics := (.Underlying.GetAirQualityMetrics) }}
+    {{ if $airQualityMetrics }}
+    <td>{{ $airQualityMetrics.String }}</td>
+    {{ else }}
+    <td></td>
+    {{ end }}
+    {{ $environmentMetrics := (.Underlying.GetEnvironmentMetrics) }}
+    {{ if $environmentMetrics }}
+    <td>{{ if $environmentMetrics.Temperature }}{{ $environmentMetrics.Temperature| emptyNilFloat32}}°C{{end}}</td>
+    <td>{{ if $environmentMetrics.RelativeHumidity}}{{ $environmentMetrics.RelativeHumidity|emptyNilFloat32}}%{{end}}</td>
+    <td>{{ if $environmentMetrics.BarometricPressure}}{{ $environmentMetrics.BarometricPressure|emptyNilFloat32}} hPa{{end}}</td>
+    <td>{{ if $environmentMetrics.GasResistance}}{{ $environmentMetrics.GasResistance|emptyNilFloat32}} Ohm{{end}}</td>
+    <td>{{ if $environmentMetrics.Iaq}}{{ $environmentMetrics.Iaq}} AqI{{end}}</td>
+    {{ else }}
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    {{ end }}
+    {{ $powerMetrics := (.Underlying.GetPowerMetrics) }}
+    {{ if $powerMetrics }}
+    <td>{{ $powerMetrics.String }}</td>
+    {{ else }}
+    <td></td>
+    {{ end }}
+    {{ $localstats := (.Underlying.GetLocalStats) }}
+    {{ if $localstats }}
+    <td>{{ $localstats.String }}</td>
+    {{ else }}
+    <td></td>
+    {{ end }}
+    {{ $healthMetrics := (.Underlying.GetHealthMetrics) }}
+    {{ if $healthMetrics }}
+    <td>{{ $healthMetrics.String }}</td>
+    {{ else }}
+    <td></td>
+    {{ end }}
+  </tr>
+{{end}}
+</table>
+{{template "footer"}}
