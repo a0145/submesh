@@ -5,13 +5,17 @@ Requires the go binary and a `config.yaml` next to it
 
 ## Building
 
+```sh
 git clone https://github.com/a0145/submesh.git
 cd submesh
 go build -o submesh .
+```
 
 ## Running
 
+```sh
 ./submesh
+```
 
 ## Config
 
