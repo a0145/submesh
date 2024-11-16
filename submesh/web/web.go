@@ -368,7 +368,6 @@ func StartServer(ctx context.Context) {
 		if len(to) > limitTo {
 			to = to[:limitTo]
 		}
-		fmt.Println("ASDF: to", to)
 		c.HTML(http.StatusOK, "templates/user.html", gin.H{
 			"QueryUser":     id,
 			"User":          user,
