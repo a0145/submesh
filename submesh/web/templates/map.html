@@ -14,25 +14,37 @@ L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
 }).addTo(map);
 
 var markers = [];
-
-{{ range .Positions }}
-{{ if .Underlying.LatitudeI }}
+var heatMapData = {{.Heatmap}};
 
 
-var marker = L.marker([{{.Underlying.LatitudeI|coordToFloat}}, {{.Underlying.LongitudeI | coordToFloat}}]).addTo(map);
-markers.push(marker);
+var heatLayer = [];
+for (var i = 0; i < heatMapData.length; i++){
+    const ele = heatMapData[i];
+    var marker = L.marker({lat: ele["Lat"],lon: ele["Long"]},{}).addTo(map);
+    markers.push(marker);
 
-var circle = L.circle([{{.Underlying.LatitudeI|coordToFloat}}, {{.Underlying.LongitudeI | coordToFloat}}], {
-    color: 'red',
-    fillColor: '#f03',
-    fillOpacity: 0.2,
-    radius: 100*{{.Underlying.PrecisionBits}}
-}).addTo(map);
-marker.bindPopup("<b><a href='/user?id={{.From}}'><minidenticon-svg username='{{.From}}'></minidenticon-svg><br>{{.From | idToShortaddr}}</a><br>{{.From|longNameFromId}}<br>Last Heard: {{.From|lastHeard}} ago</b><br>Altitude: {{.From|lastAltitide}}m").openPopup();
+    var circle = L.circle([ele["Lat"],ele["Long"]], {
+    color: 'gray',
+    opacity: 0.1,
+    fillColor: 'gray',
+    fillOpacity: 0,
+    stroke: true,
+    radius: 100*ele["PrecisionBits"]
+    }).addTo(map);
 
+    heatLayer.push([ele["Lat"],ele["Long"],ele["Hits"]]);
+    marker.bindPopup(`<b><a href='/user?id=${ele["Id"]}'>
+        <minidenticon-svg username='${ele["Id"]}'></minidenticon-svg>
+        <br>${ele["ShortAddr"]}</a>
+        <br>${ele["LongName"]}
+        <br>Last Heard: ${ele["LastHeard"]} ago</b>
+        <br>Altitude: ${ele["LastAltitude"]}m
+        <br>Messages From: ${ele["Hits"]}
+        `).openPopup();
+}
 
-{{end}}
-{{end}}
+var heat = L.heatLayer(heatLayer, {radius: 50}).addTo(map);
+
 var group = new L.featureGroup(markers);
 map.fitBounds(group.getBounds());
 

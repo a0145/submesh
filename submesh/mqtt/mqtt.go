@@ -14,8 +14,15 @@ import (
 
 const clientID = "SubMesh"
 
-func MQTTConnect(ctx context.Context, topic string, u *url.URL, handleMessage func(ctx context.Context, msg paho.PublishReceived)) {
+func MQTTConnectAndListen(ctx context.Context, topics []string, u *url.URL, handleMessage func(ctx context.Context, msg paho.PublishReceived)) {
 	log := ctx.Value(contextkeys.Logger).(*zap.Logger).With(zap.String("module", "mqtt"))
+	subOptions := []paho.SubscribeOptions{}
+	for _, topic := range topics {
+		subOptions = append(subOptions, paho.SubscribeOptions{
+			Topic: topic,
+			QoS:   1,
+		})
+	}
 	cliCfg := autopaho.ClientConfig{
 		ServerUrls: []*url.URL{u},
 		KeepAlive:  20, // Keepalive message should be sent every 20 seconds
@@ -31,9 +38,7 @@ func MQTTConnect(ctx context.Context, topic string, u *url.URL, handleMessage fu
 			// Subscribing in the OnConnectionUp callback is recommended (ensures the subscription is reestablished if
 			// the connection drops)
 			if _, err := cm.Subscribe(context.Background(), &paho.Subscribe{
-				Subscriptions: []paho.SubscribeOptions{
-					{Topic: topic, QoS: 1},
-				},
+				Subscriptions: subOptions,
 			}); err != nil {
 				log.Error("failed to subscribe", zap.Error(err))
 			}

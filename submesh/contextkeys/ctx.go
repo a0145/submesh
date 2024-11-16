@@ -8,4 +8,5 @@ const (
 	Logger         ContextKey = "logger"
 	State          ContextKey = "state"
 	Config         ContextKey = "config"
+	AtomicLevel    ContextKey = "atomicLevel"
 )

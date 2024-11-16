@@ -1,0 +1,57 @@
+{{define "utilization_chart"}}
+{{ $TelemetryArr := index . 0 }}
+
+<div style="width: 500px;">
+    <canvas id="utilization_chart" ></canvas>
+</div>
+<script>
+const ctx = document.getElementById('utilization_chart');
+
+var utilization = [];
+var airtime = [];
+var labels = [];
+{{ range $TelemetryArr }}
+    labels.push({{.RxTime | unixToHourDate}});
+    {{ $deviceMetrics := (.Underlying.GetDeviceMetrics) }}
+    {{ if $deviceMetrics }}
+    {{ if $deviceMetrics.ChannelUtilization }}utilization.push({{ $deviceMetrics.ChannelUtilization}});{{end}}
+    {{ if $deviceMetrics.AirUtilTx }}airtime.push({{ $deviceMetrics.AirUtilTx}});{{end}}
+    {{end}}
+{{ end }}
+
+new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: labels,
+        datasets: [
+        {
+            label: 'Airtime',
+            data: airtime,
+            borderWidth: 1,
+            fill: 'origin'
+        },{
+            label: 'Utilization',
+            data: utilization,
+            borderWidth: 1,
+            fill: 'origin'
+        }]
+    },
+    
+    options: {
+        
+    scales: {
+        y: {
+            beginAtZero: true,
+            max: 100,
+            min: 0
+        },
+        x: {
+            display: false,
+            
+        }
+    }
+    }
+});
+</script>
+   
+{{end}}

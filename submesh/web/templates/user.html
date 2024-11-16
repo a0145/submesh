@@ -1,14 +1,14 @@
 {{template "header"}}
 
-<h3>User Info</h3>
+<h3>User Info for {{ if .User}}{{ .User.Underlying.ShortName }}{{else}}{{.QueryUser | parseUint32 | idToShortaddr}}{{end}}</h3>
 <table>
 
-{{ if .User }}
 <tr>
 
-{{ if .Position }}
-<td>
- <div id="map" style="width: 500px;height: 500px"></div>
+<td valign="top">
+  <h4>Map</h4>
+  {{ if .Position }}
+  <div id="map" style="width: 500px;height: 500px"></div>
 
 <script type="text/javascript">
 var map = L.map('map');
@@ -41,12 +41,21 @@ map.zoomOut(0.2*{{.Position.Underlying.PrecisionBits}});
 {{end}}
 
 </script>
-</td>
+{{else}}
+No info yet
 {{end}}
 
-<td>
-<h4>Info</h4>
+<h4>Utilization</h4>
+{{ if .Telemetry}}
+{{template "utilization_chart" (arr .Telemetry)}}
+{{else}}
+No info yet
+{{end}}
+</td>
 
+<td valign="top">
+  <h4>Node Info</h4>
+  {{if .User}}
   <table>
     <tr>
       <th>Id</th>
@@ -68,9 +77,12 @@ map.zoomOut(0.2*{{.Position.Underlying.PrecisionBits}});
       <td>{{.User.RxTime | timeAgo }}</td>
     </tr>
   </table>
+  {{else}}
+  No info yet
+  {{end}}
 
-{{ if .Telemetry }}
 <h4>Telemetry</h4>
+  {{ if .Telemetry }}
 
 <table>
   <tr>
@@ -92,9 +104,9 @@ map.zoomOut(0.2*{{.Position.Underlying.PrecisionBits}});
     <th>Health</th>
 </tr>
   <tr>
-    <td>{{ template "user_link" (arr .Telemetry.From)}}</td>
-    <td>{{.Telemetry.RxTime | timeAgo}}</td>
-    {{ $deviceMetrics := (.Telemetry.Underlying.GetDeviceMetrics) }}
+    <td>{{ template "user_link" (arr .LastTelemetry.From)}}</td>
+    <td>{{.LastTelemetry.RxTime | timeAgo}}</td>
+    {{ $deviceMetrics := (.LastTelemetry.Underlying.GetDeviceMetrics) }}
     {{ if $deviceMetrics }}
     <td>{{ if $deviceMetrics.BatteryLevel }}<meter min="0" max="100" low="30" value="{{ $deviceMetrics.BatteryLevel }}">{{ $deviceMetrics.BatteryLevel }}</meter><br>{{ $deviceMetrics.BatteryLevel }}%{{end}}</td>
     <td>{{if $deviceMetrics.Voltage}}{{ $deviceMetrics.Voltage}} V{{end}}</td>
@@ -108,13 +120,13 @@ map.zoomOut(0.2*{{.Position.Underlying.PrecisionBits}});
     <td></td>
     <td></td>
     {{ end }}
-    {{ $airQualityMetrics := (.Telemetry.Underlying.GetAirQualityMetrics) }}
+    {{ $airQualityMetrics := (.LastTelemetry.Underlying.GetAirQualityMetrics) }}
     {{ if $airQualityMetrics }}
     <td>{{ $airQualityMetrics.String }}</td>
     {{ else }}
     <td></td>
     {{ end }}
-    {{ $environmentMetrics := (.Telemetry.Underlying.GetEnvironmentMetrics) }}
+    {{ $environmentMetrics := (.LastTelemetry.Underlying.GetEnvironmentMetrics) }}
     {{ if $environmentMetrics }}
     <td>{{ if $environmentMetrics.Temperature }}{{ $environmentMetrics.Temperature| emptyNilFloat32}}°C{{end}}</td>
     <td>{{ if $environmentMetrics.RelativeHumidity}}{{ $environmentMetrics.RelativeHumidity|emptyNilFloat32}}%{{end}}</td>
@@ -128,19 +140,19 @@ map.zoomOut(0.2*{{.Position.Underlying.PrecisionBits}});
     <td></td>
     <td></td>
     {{ end }}
-    {{ $powerMetrics := (.Telemetry.Underlying.GetPowerMetrics) }}
+    {{ $powerMetrics := (.LastTelemetry.Underlying.GetPowerMetrics) }}
     {{ if $powerMetrics }}
     <td>{{ $powerMetrics.String }}</td>
     {{ else }}
     <td></td>
     {{ end }}
-    {{ $localstats := (.Telemetry.Underlying.GetLocalStats) }}
+    {{ $localstats := (.LastTelemetry.Underlying.GetLocalStats) }}
     {{ if $localstats }}
     <td>{{ $localstats.String }}</td>
     {{ else }}
     <td></td>
     {{ end }}
-    {{ $healthMetrics := (.Telemetry.Underlying.GetHealthMetrics) }}
+    {{ $healthMetrics := (.LastTelemetry.Underlying.GetHealthMetrics) }}
     {{ if $healthMetrics }}
     <td>{{ $healthMetrics.String }}</td>
     {{ else }}
@@ -148,31 +160,37 @@ map.zoomOut(0.2*{{.Position.Underlying.PrecisionBits}});
     {{ end }}
   </tr>
 </table>
+{{ else}}
+No info yet
 {{end}}
-{{ if .Position }}
 <h4> Location</h4>
+{{ if .Position }}
 {{.Position.Underlying.String}}
+{{ else}}
+No info yet
 {{end}}
 
-  {{ else }}
-  Unknown User
-  {{ end }} 
 </td>
 </tr>
 </table>
-  {{ if .User }}
-  <table>
+<table>
   <tr>
-  <td valign="top">
-  <h3>Recent Messages From {{ .User.Underlying.ShortName }}</h3>
-  {{template "summary_table" (arr .FromMsgs) }}
-  </td>
-  <td valign="top">
-
-  <h3>Recent Messages To {{ .User.Underlying.ShortName }}</h3>
-  {{template "summary_table" (arr .ToMsgs) }}
-  </td>
+    <td width="50%" valign="top">
+      <h3>Recent Messages From {{ if .User}}{{ .User.Underlying.ShortName }}{{else}}{{.QueryUser | parseUint32 | idToShortaddr}}{{end}}</h3>
+    {{if .FromMsgs}}
+    {{template "summary_table" (arr .FromMsgs) }}
+    {{else}}
+    No info yet
+    {{end}}
+    </td>
+    <td width="50%" valign="top">
+      <h3>Recent Messages To {{ if .User}}{{ .User.Underlying.ShortName }}{{else}}{{.QueryUser | parseUint32 | idToShortaddr}}{{end}}</h3>
+      {{if .ToMsgs}}
+      {{template "summary_table" (arr .ToMsgs) }}
+      {{else}}
+      No info yet
+      {{end}}
+    </td>
   </tr>
-  </table>
-  {{ end }}
+</table>
 {{template "footer"}}

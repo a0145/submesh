@@ -3,6 +3,7 @@ package web
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -26,7 +27,33 @@ func truncArray(arr []any, n int) []any {
 	}
 	return arr
 }
+func longNameFromId(state *state.State, id uint32) string {
+	userObj := state.Users.LastBy(fmt.Sprintf("%d", id))
+	if userObj != nil {
+		return userObj.Underlying.LongName
+	}
+	return "unknown"
+}
+func idToShortaddr(state *state.State, id uint32) string {
+	//lookup user
+	if id == 4294967295 {
+		return "Broadcast"
+	}
+	h := fmt.Sprintf("!%x", id)
 
+	userObj := state.Users.LastBy(h)
+	if userObj != nil {
+		return userObj.Underlying.ShortName
+	}
+	return h
+}
+func lastAltitude(state *state.State, id uint32) string {
+	userObj := state.Positions.LastBy(fmt.Sprintf("%d", id))
+	if userObj != nil && userObj.Underlying.Altitude != nil {
+		return fmt.Sprintf("%d", *userObj.Underlying.Altitude)
+	}
+	return "unknown"
+}
 func formatAsDate(t time.Time) string {
 	year, month, day := t.Date()
 	return fmt.Sprintf("%d%02d/%02d", year, month, day)
@@ -97,6 +124,85 @@ func ApiMiddleware(ctx context.Context) gin.HandlerFunc {
 	}
 }
 
+func coordToFloat(s int32) float32 {
+	return float32(s) * 1e-7
+}
+
+type HeatMapData struct {
+	Id            uint32
+	Lat           float32
+	Long          float32
+	Hits          int
+	ShortAddr     string
+	LongName      string
+	LastHeard     string
+	LastAltitude  string
+	PrecisionBits uint32
+}
+
+func lastHeard(state *state.State, id uint32) string {
+	userObj := state.AllMessages.LastByProperty("From", fmt.Sprintf("%d", id))
+	if userObj != nil {
+		return timeAgo(&userObj.RxTime)
+	}
+	return "unknown"
+}
+
+func hitmapToHeatmap(state *state.State, hitMap map[uint32]int) template.JS {
+	assembled := []HeatMapData{}
+
+	for peerId, hitCount := range hitMap {
+		locationOfPeer := state.Positions.LastBy(fmt.Sprintf("%d", peerId))
+		if locationOfPeer != nil && locationOfPeer.Underlying.LatitudeI != nil && locationOfPeer.Underlying.LongitudeI != nil {
+			altitude := "unknown"
+			if locationOfPeer.Underlying.Altitude != nil {
+				altitude = fmt.Sprintf("%d", *locationOfPeer.Underlying.Altitude)
+			}
+			assembled = append(assembled, HeatMapData{
+				Id:            peerId,
+				Lat:           coordToFloat(*locationOfPeer.Underlying.LatitudeI),
+				Long:          coordToFloat(*locationOfPeer.Underlying.LongitudeI),
+				Hits:          hitCount,
+				ShortAddr:     idToShortaddr(state, peerId),
+				LongName:      longNameFromId(state, peerId),
+				LastHeard:     lastHeard(state, peerId),
+				LastAltitude:  altitude,
+				PrecisionBits: locationOfPeer.Underlying.PrecisionBits,
+			})
+		}
+	}
+
+	marshalled, _ := json.Marshal(assembled)
+	return template.JS(string(marshalled))
+
+}
+
+func heatmapMessageCount(state *state.State) template.JS {
+	hitMap := map[uint32]int{}
+
+	for _, tr := range state.AllMessages.All() {
+		hitMap[tr.From]++
+	}
+
+	return hitmapToHeatmap(state, hitMap)
+}
+
+func tracerouteHeatmap(state *state.State) template.JS {
+	hitMap := map[uint32]int{}
+	max := 0
+
+	for _, tr := range state.Traceroutes.All() {
+		for _, routingPeer := range tr.Underlying.Route {
+			hitMap[routingPeer]++
+			if hitMap[routingPeer] > max {
+				max = hitMap[routingPeer]
+			}
+		}
+	}
+
+	return hitmapToHeatmap(state, hitMap)
+}
+
 type TwoRow struct {
 	Num    int
 	First  uint32
@@ -105,7 +211,9 @@ type TwoRow struct {
 
 func StartServer(ctx context.Context) {
 	gin.SetMode(gin.ReleaseMode)
-	router := gin.Default()
+	router := gin.New()
+	router.Use(gin.Recovery())
+
 	router.Use(ApiMiddleware(ctx))
 	router.SetFuncMap(template.FuncMap{
 		"appVersion": func() string {
@@ -114,18 +222,12 @@ func StartServer(ctx context.Context) {
 		"formatAsDate": formatAsDate,
 		"timeAgo":      timeAgo,
 		"timeUptime":   timeUptime,
+		"parseUint32": func(s string) uint32 {
+			decimal_num, _ := strconv.ParseInt(s, 10, 64)
+			return uint32(decimal_num)
+		},
 		"idToShortaddr": func(id uint32) string {
-			//lookup user
-			if id == 4294967295 {
-				return "Broadcast"
-			}
-			h := fmt.Sprintf("!%x", id)
-
-			userObj := ctx.Value(contextkeys.State).(*state.State).Users.LastBy(h)
-			if userObj != nil {
-				return userObj.Underlying.ShortName
-			}
-			return h
+			return idToShortaddr(ctx.Value(contextkeys.State).(*state.State), id)
 		},
 		"bytesToB64String": func(b []byte) string {
 			return base64.StdEncoding.EncodeToString(b)
@@ -184,32 +286,21 @@ func StartServer(ctx context.Context) {
 			}
 			return fmt.Sprintf("%s%s", s, unit)
 		},
-		"coordToFloat": func(s int32) float32 {
-			return float32(s) * 1e-7
-		},
+		"coordToFloat": coordToFloat,
 		"longNameFromId": func(id uint32) string {
-			userObj := ctx.Value(contextkeys.State).(*state.State).Users.LastBy(fmt.Sprintf("%d", id))
-			if userObj != nil {
-				return userObj.Underlying.LongName
-			}
-			return "unknown"
+			return longNameFromId(ctx.Value(contextkeys.State).(*state.State), id)
+		},
+		"unixToHourDate": func(t uint32) string {
+			return time.Unix(int64(t), 0).Format("02/01/2006 15:04")
 		},
 		"lastHeard": func(id uint32) string {
-			userObj := ctx.Value(contextkeys.State).(*state.State).AllMessages.LastByProperty("From", fmt.Sprintf("%d", id))
-			if userObj != nil {
-				return timeAgo(&userObj.RxTime)
-			}
-			return "unknown"
+			return lastHeard(ctx.Value(contextkeys.State).(*state.State), id)
 		},
 		"timeAgoInt": func(id uint32) string {
 			return timeAgo(&id)
 		},
 		"lastAltitide": func(id uint32) string {
-			userObj := ctx.Value(contextkeys.State).(*state.State).Positions.LastBy(fmt.Sprintf("%d", id))
-			if userObj != nil && userObj.Underlying.Altitude != nil {
-				return fmt.Sprintf("%d", *userObj.Underlying.Altitude)
-			}
-			return "unknown"
+			return lastAltitude(ctx.Value(contextkeys.State).(*state.State), id)
 		},
 		"tracerouteTo": func(route *meshtastic.RouteDiscovery) []TwoRow {
 			ret := []TwoRow{}
@@ -253,13 +344,19 @@ func StartServer(ctx context.Context) {
 		id := c.Query("id")
 		sdb, _ := c.MustGet("statedb").(*state.State)
 		user := sdb.Users.LastBy(id)
-		var intId = uint32(0)
+
+		// assume the query id is a decimal version
+		decimal_num, _ := strconv.ParseInt(id, 10, 64)
+		var intId = uint32(decimal_num)
 		var position *types.ParsedMessage[meshtastic.Position]
 		var telemetry *types.ParsedMessage[meshtastic.Telemetry]
+		var allTelemetry []types.ParsedMessage[meshtastic.Telemetry]
+
 		if user != nil {
 			intId = hexCodeToId(user.Underlying.Id)
 			position = ctx.Value(contextkeys.State).(*state.State).Positions.LastBy(fmt.Sprintf("%d", intId))
 			telemetry = ctx.Value(contextkeys.State).(*state.State).Telemetry.LastBy(fmt.Sprintf("%d", intId))
+			allTelemetry = ctx.Value(contextkeys.State).(*state.State).Telemetry.FilteredByString("From", fmt.Sprintf("%d", intId))
 		}
 		limitTo := 500
 		from := sdb.AllMessages.FilteredByString("From", fmt.Sprintf("%d", intId))
@@ -270,14 +367,16 @@ func StartServer(ctx context.Context) {
 		if len(to) > limitTo {
 			to = to[:limitTo]
 		}
+		fmt.Println("ASDF: to", to)
 		c.HTML(http.StatusOK, "templates/user.html", gin.H{
-			"QueryUser": id,
-			"User":      user,
-			"Position":  position,
-			"Telemetry": telemetry,
-			"intId":     intId,
-			"FromMsgs":  from,
-			"ToMsgs":    to,
+			"QueryUser":     id,
+			"User":          user,
+			"Position":      position,
+			"LastTelemetry": telemetry,
+			"Telemetry":     allTelemetry,
+			"intId":         intId,
+			"FromMsgs":      from,
+			"ToMsgs":        to,
 		})
 	})
 
@@ -314,6 +413,7 @@ func StartServer(ctx context.Context) {
 		}
 		c.HTML(http.StatusOK, "templates/traceroutes.html", gin.H{
 			"Traceroutes": traceroutes,
+			"Heatmap":     tracerouteHeatmap(sdb),
 		})
 	})
 	router.GET("/nondecryptable", func(c *gin.Context) {
@@ -326,6 +426,7 @@ func StartServer(ctx context.Context) {
 		sdb, _ := c.MustGet("statedb").(*state.State)
 		c.HTML(http.StatusOK, "templates/map.html", gin.H{
 			"Positions": sdb.Positions.OnlyMostRecentByPropertyString("From"),
+			"Heatmap":   heatmapMessageCount(sdb),
 		})
 	})
 	router.GET("/all", func(c *gin.Context) {

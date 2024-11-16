@@ -1,4 +1,46 @@
 {{template "header"}}
+<div id="map" style="height: 300px"></div>
+
+
+<script type="text/javascript">
+// Create the map
+var map = L.map('map');
+
+// Set up the OSM layer
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+}).addTo(map);
+
+var markers = [];
+var data = {{.Heatmap}};
+
+var heatLayer = [];
+for (var i = 0; i < data.length; i++){
+    const ele = data[i];
+    var marker = L.marker([ele["Lat"],ele["Long"]]).addTo(map);
+    markers.push(marker);
+
+    heatLayer.push([ele["Lat"],ele["Long"],ele["Hits"]]);
+    marker.bindPopup(`<b><a href='/user?id=${ele["Id"]}'>
+        <minidenticon-svg username='${ele["Id"]}'></minidenticon-svg>
+        <br>${ele["ShortAddr"]}</a>
+        <br>${ele["LongName"]}
+        <br>Last Heard: ${ele["LastHeard"]} ago</b>
+        <br>Altitude: ${ele["LastAltitude"]}m
+        <br>Route Hits: ${ele["Hits"]}
+        `).openPopup();
+}
+
+var heat = L.heatLayer(heatLayer, {radius: 70}).addTo(map);
+
+var group = new L.featureGroup(markers);
+map.fitBounds(group.getBounds());
+
+</script>
+
+
+
 <table>
   <tr>
     <th>From</th>

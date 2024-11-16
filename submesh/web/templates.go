@@ -2,7 +2,6 @@ package web
 
 import (
 	"embed"
-	"fmt"
 	"html/template"
 	"io/fs"
 	"regexp"
@@ -17,7 +16,6 @@ var templatesFS embed.FS
 func LoadHTMLFromEmbedFS(engine *gin.Engine, embedFS embed.FS, pattern string) {
 	root := template.New("")
 	tmpl := template.Must(root, LoadAndAddToRoot(engine.FuncMap, root, embedFS, pattern))
-	fmt.Println(tmpl)
 	engine.SetHTMLTemplate(tmpl)
 }
 func LoadAndAddToRoot(funcMap template.FuncMap, rootTemplate *template.Template, embedFS embed.FS, pattern string) error {
