@@ -1,0 +1,19 @@
+minidenticon-svg svg {
+  border-radius: 50%;
+  background-color: grey;
+  height: 28px;
+  width: 28px;
+  display: inline-block;
+}
+
+body {
+  grid-template-columns: 0fr 98% 0fr;
+  place-content: center;
+}
+table {
+  font-size: 80%;
+  width: 100%;
+}
+code {
+  max-width: 50px;
+}

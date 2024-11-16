@@ -1,3 +1,6 @@
+/*
+minidenticons, MIT License: https://github.com/laurentpayot/minidenticons
+*/
 const t = 5;
 function e(e) {
   return e.split("").reduce((e, n) => (e ^ n.charCodeAt(0)) * -t, t) >>> 2;

@@ -9,7 +9,6 @@ import (
 //go:embed static/*
 var staticFSRoot embed.FS
 
-// myFS implements fs.FS
 type staticFS struct {
 	content embed.FS
 }
