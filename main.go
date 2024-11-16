@@ -19,7 +19,7 @@ import (
 	"go.uber.org/zap"
 )
 
-const AppVersion = "0.0.3"
+const AppVersion = "0.0.4"
 
 func doConfig() {
 	// LoadConfig
@@ -40,7 +40,7 @@ func doConfig() {
 	viper.SetDefault("mqtt.password", "")
 	viper.SetDefault("mqtt.topics", []string{})
 	viper.SetDefault("submesh.production", false)
-	viper.SetDefault("submesh.alllimit", 500)
+	viper.SetDefault("submesh.all_limit", 500)
 }
 
 func main() {
