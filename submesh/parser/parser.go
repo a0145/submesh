@@ -293,7 +293,6 @@ func HandleMQTTMessage(ctx context.Context, pr paho.PublishReceived) {
 	if strings.Contains(pr.Packet.Topic, "/json/") {
 		// json log
 		log.Info("received json message")
-		ctx.Value(contextkeys.JSONFileLogger).(*filelog.FileLog).WriteLine(string(pr.Packet.Topic), string(pr.Packet.Payload))
 		return
 	}
 	// save to bytelog
