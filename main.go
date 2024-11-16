@@ -19,7 +19,7 @@ import (
 	"go.uber.org/zap"
 )
 
-const AppVersion = "0.0.4"
+const AppVersion = "0.0.5"
 
 func doConfig() {
 	// LoadConfig
