@@ -1,5 +1,6 @@
 submesh:
   production: true
+  all_limit: 500
 web:
   port: 8080
 mqtt:

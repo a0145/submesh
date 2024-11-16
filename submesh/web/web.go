@@ -18,6 +18,7 @@ import (
 	ginzap "github.com/gin-contrib/zap"
 	"github.com/gin-gonic/gin"
 	"github.com/gomig/avatar"
+	"github.com/spf13/viper"
 	"go.uber.org/zap"
 )
 
@@ -326,7 +327,7 @@ func StartServer(ctx context.Context) {
 		},
 	})
 	LoadHTMLFromEmbedFS(router, templatesFS, "templates/*.html")
-
+	router.StaticFS("static", http.FS(staticFS{staticFSRoot}))
 	logger := ctx.Value(contextkeys.Logger).(*zap.Logger)
 	router.Use(ginzap.Ginzap(logger, time.RFC3339, true))
 
@@ -358,7 +359,7 @@ func StartServer(ctx context.Context) {
 			telemetry = ctx.Value(contextkeys.State).(*state.State).Telemetry.LastBy(fmt.Sprintf("%d", intId))
 			allTelemetry = ctx.Value(contextkeys.State).(*state.State).Telemetry.FilteredByString("From", fmt.Sprintf("%d", intId))
 		}
-		limitTo := 500
+		limitTo := viper.GetInt("submesh.all_limit")
 		from := sdb.AllMessages.FilteredByString("From", fmt.Sprintf("%d", intId))
 		if len(from) > limitTo {
 			from = from[:limitTo]
@@ -395,7 +396,7 @@ func StartServer(ctx context.Context) {
 	})
 	router.GET("/telemetry", func(c *gin.Context) {
 		sdb, _ := c.MustGet("statedb").(*state.State)
-		limit := 500
+		limit := viper.GetInt("submesh.all_limit")
 		telemetry := sdb.Telemetry.All()
 		if len(telemetry) > limit {
 			telemetry = telemetry[:limit]
@@ -406,7 +407,7 @@ func StartServer(ctx context.Context) {
 	})
 	router.GET("/traceroutes", func(c *gin.Context) {
 		sdb, _ := c.MustGet("statedb").(*state.State)
-		limit := 500
+		limit := viper.GetInt("submesh.all_limit")
 		traceroutes := sdb.Traceroutes.All()
 		if len(traceroutes) > limit {
 			traceroutes = traceroutes[:limit]
@@ -432,7 +433,7 @@ func StartServer(ctx context.Context) {
 	router.GET("/all", func(c *gin.Context) {
 		sdb, _ := c.MustGet("statedb").(*state.State)
 		allm := sdb.AllMessages.All()
-		only := 500
+		only := viper.GetInt("submesh.all_limit")
 		if len(allm) > only {
 			allm = allm[:only]
 		}
@@ -440,12 +441,7 @@ func StartServer(ctx context.Context) {
 			"All": allm,
 		})
 	})
-	router.GET("/hi", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"message": "hi",
-		})
-	})
 
-	router.Run(":8080")
+	router.Run(fmt.Sprintf(":%d", viper.GetInt("web.port")))
 
 }

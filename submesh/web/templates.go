@@ -10,7 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-//go:embed templates/*
+//go:embed templates/**
 var templatesFS embed.FS
 
 func LoadHTMLFromEmbedFS(engine *gin.Engine, embedFS embed.FS, pattern string) {

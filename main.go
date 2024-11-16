@@ -40,6 +40,7 @@ func doConfig() {
 	viper.SetDefault("mqtt.password", "")
 	viper.SetDefault("mqtt.topics", []string{})
 	viper.SetDefault("submesh.production", false)
+	viper.SetDefault("submesh.alllimit", 500)
 }
 
 func main() {
