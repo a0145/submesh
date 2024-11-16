@@ -217,7 +217,7 @@ func StartServer(ctx context.Context) {
 	router.Use(ApiMiddleware(ctx))
 	router.SetFuncMap(template.FuncMap{
 		"appVersion": func() string {
-			return AppVersion
+			return ctx.Value(contextkeys.AppVersion).(string)
 		},
 		"formatAsDate": formatAsDate,
 		"timeAgo":      timeAgo,

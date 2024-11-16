@@ -9,4 +9,5 @@ const (
 	State          ContextKey = "state"
 	Config         ContextKey = "config"
 	AtomicLevel    ContextKey = "atomicLevel"
+	AppVersion     ContextKey = "AppVersion"
 )

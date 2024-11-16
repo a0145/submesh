@@ -19,6 +19,8 @@ import (
 	"go.uber.org/zap"
 )
 
+const AppVersion = "0.0.3"
+
 func doConfig() {
 	// LoadConfig
 	viper.SetConfigName("config")
@@ -68,6 +70,7 @@ func main() {
 	ctx = context.WithValue(ctx, contextkeys.Logger, logger)
 	ctx = context.WithValue(ctx, contextkeys.State, state.NewState())
 	ctx = context.WithValue(ctx, contextkeys.AtomicLevel, &atomicLevel)
+	ctx = context.WithValue(ctx, contextkeys.AppVersion, AppVersion)
 
 	// catch up
 	catchup.CatchUp(ctx)
