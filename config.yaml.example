@@ -1,6 +1,10 @@
 submesh:
   production: true
   all_limit: 500
+  db:
+    max_megs: 50
+    max_days: 28
+    max_backups: 28
 web:
   port: 8080
 mqtt:

@@ -19,7 +19,7 @@ import (
 	"go.uber.org/zap"
 )
 
-const AppVersion = "0.0.5"
+const AppVersion = "0.0.6"
 
 func doConfig() {
 	// LoadConfig
@@ -41,6 +41,10 @@ func doConfig() {
 	viper.SetDefault("mqtt.topics", []string{})
 	viper.SetDefault("submesh.production", false)
 	viper.SetDefault("submesh.all_limit", 500)
+
+	viper.SetDefault("submesh.db.max_megs", 50)
+	viper.SetDefault("submesh.db.max_backups", 28)
+	viper.SetDefault("submesh.db.max_age", 28)
 }
 
 func main() {
@@ -65,9 +69,11 @@ func main() {
 		logger.Info("running in production mode")
 		b64log = "log_prod.b64lines"
 	}
+	filelogger := filelog.NewFileLog(b64log)
+	defer filelogger.Close()
 
 	// setup context
-	ctx = context.WithValue(ctx, contextkeys.RAWFileLogger, &filelog.FileLog{Filename: b64log})
+	ctx = context.WithValue(ctx, contextkeys.RAWFileLogger, filelogger)
 	ctx = context.WithValue(ctx, contextkeys.Logger, logger)
 	ctx = context.WithValue(ctx, contextkeys.State, state.NewState())
 	ctx = context.WithValue(ctx, contextkeys.AtomicLevel, &atomicLevel)

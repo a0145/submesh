@@ -1,4 +1,5 @@
 *.exe
 config.yaml
 *.b64lines
+*.b64lines.gs
 Makefile

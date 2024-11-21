@@ -14,7 +14,7 @@ import (
 )
 
 func CatchUp(ctx context.Context) {
-	filename := ctx.Value(contextkeys.RAWFileLogger).(*filelog.FileLog).Filename
+	filename := ctx.Value(contextkeys.RAWFileLogger).(*filelog.FileLog).Filename()
 	logger := ctx.Value(contextkeys.Logger).(*zap.Logger)
 	atomicLevel := ctx.Value(contextkeys.AtomicLevel).(*zap.AtomicLevel)
 	prevLevel := atomicLevel.Level()
