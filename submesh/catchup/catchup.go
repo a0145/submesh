@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/base64"
+	"fmt"
 	"os"
 	"strings"
 	"submesh/submesh/contextkeys"
@@ -24,34 +25,49 @@ func CatchUp(ctx context.Context) {
 
 	if _, err := os.Stat(filename); err == nil {
 		// open file and read line by line
+
 		file, err := os.Open(filename)
 		if err != nil {
 			logger.Fatal("error opening file", zap.Error(err))
 		}
 		defer file.Close()
-		scanner := bufio.NewScanner(file)
-		for scanner.Scan() {
+
+		count := 0
+		reader := bufio.NewReader(file)
+		for {
+			line, err := reader.ReadString('\n')
+			if err != nil {
+				break
+			}
 			// split
 
-			parts := strings.Split(scanner.Text(), ",")
+			index := strings.LastIndexByte(line, ',')
+
 			var decoded []byte
-			if len(parts) == 1 {
+			if index == -1 {
 				// recover bytes
-				decoded, err = base64.StdEncoding.DecodeString(scanner.Text())
-				if err != nil {
-					logger.Error("error decoding base64", zap.Error(err))
-				}
-			} else if len(parts) == 3 {
-				_ = parts[0] // time
-				_ = parts[1] // topic
-				decoded, err = base64.StdEncoding.DecodeString(parts[2])
+				decoded, err = base64.StdEncoding.DecodeString(line)
 				if err != nil {
 					logger.Error("error decoding base64", zap.Error(err))
 				}
 			} else {
-				logger.Error("error parsing line", zap.String("line", scanner.Text()))
+
+				// time
+				// topic
+				// line[index+1:]
+				decoded, err = base64.StdEncoding.DecodeString(line[index+1:])
+				if err != nil {
+					logger.Error("error decoding base64", zap.Error(err))
+				}
 			}
 			parser.HandleRawPayload(ctx, decoded)
+			count += 1
+			if count%10000 == 0 {
+				fmt.Println("catching up", count)
+			}
+			if ctx.Err() != nil {
+				break
+			}
 		}
 	}
 }
