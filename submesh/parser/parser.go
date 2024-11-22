@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/sha256"
 	"encoding/base64"
 	"encoding/binary"
 	"fmt"
@@ -12,6 +13,7 @@ import (
 	"submesh/submesh/filelog"
 	"submesh/submesh/state"
 	"submesh/submesh/types"
+	"time"
 
 	meshtastic "buf.build/gen/go/meshtastic/protobufs/protocolbuffers/go/meshtastic"
 	"github.com/eclipse/paho.golang/paho"
@@ -61,6 +63,13 @@ func decode(encryptionKey []byte, encryptedData []byte, nonce []byte) (*meshtast
 }
 
 var defaultKey []byte
+
+func hashMessage(msg string) string {
+	h := sha256.New()
+	h.Write([]byte(msg))
+	bs := h.Sum(nil)
+	return fmt.Sprintf("%x\n", bs)
+}
 
 func HandleRawPayload(ctx context.Context, payload []byte, catchup bool) {
 	log := ctx.Value(contextkeys.Logger).(*zap.Logger)
@@ -150,6 +159,7 @@ func HandleRawPayload(ctx context.Context, payload []byte, catchup bool) {
 	messageSummary.Underlying.PortNum = uint32(mp.Portnum.Number())
 
 	log = log.With(zap.Any("portnum", mp.Portnum))
+	var msgHash string
 	switch mp.Portnum {
 	case meshtastic.PortNum_TELEMETRY_APP:
 		var data meshtastic.Telemetry
@@ -158,7 +168,12 @@ func HandleRawPayload(ctx context.Context, payload []byte, catchup bool) {
 			log.Error("error unmarshalling telemetry app", zap.Error(err))
 			return
 		}
+
 		messageSummary.Underlying.Summary = protojson.Format(&data)
+		msgHash = hashMessage(messageSummary.Underlying.Summary)
+		if _, ok := state.ProcessedHash[msgHash]; ok {
+			return
+		}
 		switch data.GetVariant().(type) {
 		case *meshtastic.Telemetry_AirQualityMetrics:
 			if !catchup {
@@ -203,6 +218,11 @@ func HandleRawPayload(ctx context.Context, payload []byte, catchup bool) {
 			return
 		}
 		messageSummary.Underlying.Summary = protojson.Format(&data)
+		msgHash = hashMessage(messageSummary.Underlying.Summary)
+		if _, ok := state.ProcessedHash[msgHash]; ok {
+			return
+		}
+
 		if !catchup {
 			log.Info("received message", zap.String("data", data.String()))
 		}
@@ -222,6 +242,11 @@ func HandleRawPayload(ctx context.Context, payload []byte, catchup bool) {
 			return
 		}
 		messageSummary.Underlying.Summary = protojson.Format(&data)
+		msgHash = hashMessage(messageSummary.Underlying.Summary)
+		if _, ok := state.ProcessedHash[msgHash]; ok {
+			return
+		}
+
 		if !catchup {
 			log.Info("received message", zap.String("data", data.String()))
 		}
@@ -242,6 +267,11 @@ func HandleRawPayload(ctx context.Context, payload []byte, catchup bool) {
 			return
 		}
 		messageSummary.Underlying.Summary = protojson.Format(&data)
+		msgHash = hashMessage(messageSummary.Underlying.Summary)
+		if _, ok := state.ProcessedHash[msgHash]; ok {
+			return
+		}
+
 		if !catchup {
 			log.Info("received message", zap.String("data", data.String()))
 		}
@@ -258,6 +288,11 @@ func HandleRawPayload(ctx context.Context, payload []byte, catchup bool) {
 			log.Info("received text message", zap.String("data", string(mp.Payload)))
 		}
 		messageSummary.Underlying.Summary = string(mp.Payload)
+		msgHash = hashMessage(messageSummary.Underlying.Summary)
+		if _, ok := state.ProcessedHash[msgHash]; ok {
+			return
+		}
+
 		state.Chats.Add(
 			types.ParsedMessage[string]{
 				Underlying: string(mp.Payload),
@@ -274,6 +309,11 @@ func HandleRawPayload(ctx context.Context, payload []byte, catchup bool) {
 			return
 		}
 		messageSummary.Underlying.Summary = protojson.Format(&data)
+		msgHash = hashMessage(messageSummary.Underlying.Summary)
+		if _, ok := state.ProcessedHash[msgHash]; ok {
+			return
+		}
+
 		if !catchup {
 			log.Info("received message", zap.String("data", data.String()))
 		}
@@ -293,6 +333,11 @@ func HandleRawPayload(ctx context.Context, payload []byte, catchup bool) {
 			return
 		}
 		messageSummary.Underlying.Summary = protojson.Format(&data)
+		msgHash = hashMessage(messageSummary.Underlying.Summary)
+		if _, ok := state.ProcessedHash[msgHash]; ok {
+			return
+		}
+
 		if !catchup {
 			log.Info("received message", zap.String("data", data.String()))
 		}
@@ -304,6 +349,11 @@ func HandleRawPayload(ctx context.Context, payload []byte, catchup bool) {
 			return
 		}
 		messageSummary.Underlying.Summary = protojson.Format(&data)
+		msgHash = hashMessage(messageSummary.Underlying.Summary)
+		if _, ok := state.ProcessedHash[msgHash]; ok {
+			return
+		}
+
 		if !catchup {
 			log.Info("received message", zap.String("data", data.String()))
 		}
@@ -311,7 +361,7 @@ func HandleRawPayload(ctx context.Context, payload []byte, catchup bool) {
 		log.Error("unknown port number")
 	}
 	state.AllMessages.Add(messageSummary)
-
+	state.ProcessedHash[msgHash] = time.Now()
 }
 func HandleMQTTMessage(ctx context.Context, pr paho.PublishReceived) {
 

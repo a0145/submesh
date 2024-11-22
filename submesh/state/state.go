@@ -2,6 +2,7 @@ package state
 
 import (
 	"submesh/submesh/types"
+	"time"
 
 	"buf.build/gen/go/meshtastic/protobufs/protocolbuffers/go/meshtastic"
 )
@@ -15,6 +16,7 @@ type State struct {
 	Neighbors      HistoricalWithLastByPK[meshtastic.NeighborInfo]
 	Positions      HistoricalWithLastByPK[meshtastic.Position]
 	Traceroutes    HistoricalWithLastByPK[meshtastic.RouteDiscovery]
+	ProcessedHash  map[string]time.Time
 }
 
 func NewState() *State {
@@ -27,5 +29,6 @@ func NewState() *State {
 		Neighbors:      NewHistoricalWithLastByPK[meshtastic.NeighborInfo](),
 		Positions:      NewHistoricalWithLastByPK[meshtastic.Position](),
 		Traceroutes:    NewHistoricalWithLastByPK[meshtastic.RouteDiscovery](),
+		ProcessedHash:  make(map[string]time.Time),
 	}
 }
