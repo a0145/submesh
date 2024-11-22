@@ -296,9 +296,8 @@ func HandleMQTTMessage(ctx context.Context, pr paho.PublishReceived) {
 		return
 	}
 	// save to bytelog
-	ctx.Value(contextkeys.RAWFileLogger).(*filelog.FileLog).WriteLine(
-		base64.StdEncoding.EncodeToString([]byte(pr.Packet.Topic)),
-		base64.StdEncoding.EncodeToString(pr.Packet.Payload),
+	ctx.Value(contextkeys.RAWFileLogger).(*filelog.FileLog).Write(
+		pr.Packet.Topic, pr.Packet.Payload,
 	)
 
 	HandleRawPayload(ctx, pr.Packet.Payload)

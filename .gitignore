@@ -1,5 +1,7 @@
 *.exe
 config.yaml
 *.b64lines
-*.b64lines.gs
+*.b64lines.gz
 Makefile
+*.cbor
+*.cbor.gz

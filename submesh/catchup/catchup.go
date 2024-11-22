@@ -3,14 +3,14 @@ package catchup
 import (
 	"bufio"
 	"context"
-	"encoding/base64"
 	"fmt"
 	"os"
-	"strings"
 	"submesh/submesh/contextkeys"
+	"submesh/submesh/fileencoding"
 	"submesh/submesh/filelog"
 	"submesh/submesh/parser"
 
+	"github.com/fxamacker/cbor/v2"
 	"go.uber.org/zap"
 )
 
@@ -34,33 +34,18 @@ func CatchUp(ctx context.Context) {
 
 		count := 0
 		reader := bufio.NewReader(file)
+		dec := cbor.NewDecoder(reader)
 		for {
-			line, err := reader.ReadString('\n')
-			if err != nil {
+			var logEntry fileencoding.LogEntry
+			if err := dec.Decode(&logEntry); err != nil {
+				if err.Error() == "EOF" {
+					return
+				}
+				fmt.Println("error decoding cbor", err)
 				break
 			}
-			// split
 
-			index := strings.LastIndexByte(line, ',')
-
-			var decoded []byte
-			if index == -1 {
-				// recover bytes
-				decoded, err = base64.StdEncoding.DecodeString(line)
-				if err != nil {
-					logger.Error("error decoding base64", zap.Error(err))
-				}
-			} else {
-
-				// time
-				// topic
-				// line[index+1:]
-				decoded, err = base64.StdEncoding.DecodeString(line[index+1:])
-				if err != nil {
-					logger.Error("error decoding base64", zap.Error(err))
-				}
-			}
-			parser.HandleRawPayload(ctx, decoded)
+			parser.HandleRawPayload(ctx, logEntry.Packet)
 			count += 1
 			if count%10000 == 0 {
 				fmt.Println("catching up", count)

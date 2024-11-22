@@ -63,11 +63,11 @@ func main() {
 	logger, _ := config.Build()
 
 	defer logger.Sync()
-	b64log := "log.b64lines"
+	b64log := "log.cbor"
 
 	if viper.GetBool("submesh.production") {
 		logger.Info("running in production mode")
-		b64log = "log_prod.b64lines"
+		b64log = "log_prod.cbor"
 	}
 	filelogger := filelog.NewFileLog(b64log)
 	defer filelogger.Close()
