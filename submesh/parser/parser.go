@@ -71,7 +71,7 @@ func hashMessage(msg string) string {
 	return fmt.Sprintf("%x\n", bs)
 }
 
-func HandleRawPayload(ctx context.Context, payload []byte, catchup bool) {
+func HandleRawPayload(ctx context.Context, rcvTime time.Time, payload []byte, catchup bool) {
 	log := ctx.Value(contextkeys.Logger).(*zap.Logger)
 	state := ctx.Value(contextkeys.State).(*state.State)
 	var serviceEnv meshtastic.ServiceEnvelope
@@ -111,7 +111,7 @@ func HandleRawPayload(ctx context.Context, payload []byte, catchup bool) {
 		HopStart:     serviceEnv.Packet.HopStart,
 		PublicKey:    serviceEnv.Packet.PublicKey,
 		PkiEncrypted: serviceEnv.Packet.PkiEncrypted,
-		RxTime:       serviceEnv.Packet.RxTime,
+		RxTime:       uint32(rcvTime.Unix()),
 		Channel:      serviceEnv.Packet.Channel,
 	}
 	switch serviceEnv.Packet.GetPayloadVariant().(type) {
@@ -128,7 +128,7 @@ func HandleRawPayload(ctx context.Context, payload []byte, catchup bool) {
 			state.NonDecryptable.Add(
 				types.ParsedMessage[int]{
 					Underlying: len(serviceEnv.Packet.GetEncrypted()),
-					RxTime:     serviceEnv.Packet.RxTime,
+					RxTime:     uint32(rcvTime.Unix()),
 					From:       serviceEnv.Packet.From,
 					To:         serviceEnv.Packet.To,
 					Channel:    serviceEnv.Packet.Channel,
@@ -205,7 +205,7 @@ func HandleRawPayload(ctx context.Context, payload []byte, catchup bool) {
 		state.Telemetry.Add(
 			types.ParsedMessage[meshtastic.Telemetry]{
 				Underlying: data,
-				RxTime:     serviceEnv.Packet.RxTime,
+				RxTime:     uint32(rcvTime.Unix()),
 				From:       serviceEnv.Packet.From,
 				To:         serviceEnv.Packet.To,
 				Channel:    serviceEnv.Packet.Channel,
@@ -229,7 +229,7 @@ func HandleRawPayload(ctx context.Context, payload []byte, catchup bool) {
 		state.Neighbors.Add(
 			types.ParsedMessage[meshtastic.NeighborInfo]{
 				Underlying: data,
-				RxTime:     serviceEnv.Packet.RxTime,
+				RxTime:     uint32(rcvTime.Unix()),
 				From:       serviceEnv.Packet.From,
 				To:         serviceEnv.Packet.To,
 				Channel:    serviceEnv.Packet.Channel,
@@ -253,7 +253,7 @@ func HandleRawPayload(ctx context.Context, payload []byte, catchup bool) {
 		state.Users.Add(
 			types.ParsedMessage[meshtastic.User]{
 				Underlying: data,
-				RxTime:     serviceEnv.Packet.RxTime,
+				RxTime:     uint32(rcvTime.Unix()),
 				From:       serviceEnv.Packet.From,
 				To:         serviceEnv.Packet.To,
 				Channel:    serviceEnv.Packet.Channel,
@@ -278,7 +278,7 @@ func HandleRawPayload(ctx context.Context, payload []byte, catchup bool) {
 		state.Positions.Add(
 			types.ParsedMessage[meshtastic.Position]{
 				Underlying: data,
-				RxTime:     serviceEnv.Packet.RxTime,
+				RxTime:     uint32(rcvTime.Unix()),
 				From:       serviceEnv.Packet.From,
 				To:         serviceEnv.Packet.To,
 				Channel:    serviceEnv.Packet.Channel,
@@ -376,5 +376,5 @@ func HandleMQTTMessage(ctx context.Context, pr paho.PublishReceived) {
 		pr.Packet.Topic, pr.Packet.Payload,
 	)
 
-	HandleRawPayload(ctx, pr.Packet.Payload, false)
+	HandleRawPayload(ctx, time.Now(), pr.Packet.Payload, false)
 }

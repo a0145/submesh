@@ -45,7 +45,7 @@ func CatchUp(ctx context.Context) {
 				break
 			}
 
-			parser.HandleRawPayload(ctx, logEntry.Packet, true)
+			parser.HandleRawPayload(ctx, logEntry.TimeCaptured, logEntry.Packet, true)
 			count += 1
 			if count%10000 == 0 {
 				fmt.Println("catching up", count)
