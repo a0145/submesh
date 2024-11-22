@@ -158,6 +158,7 @@ func HandleRawPayload(ctx context.Context, payload []byte, catchup bool) {
 			log.Error("error unmarshalling telemetry app", zap.Error(err))
 			return
 		}
+		messageSummary.Underlying.Summary = protojson.Format(&data)
 		switch data.GetVariant().(type) {
 		case *meshtastic.Telemetry_AirQualityMetrics:
 			if !catchup {
@@ -201,6 +202,7 @@ func HandleRawPayload(ctx context.Context, payload []byte, catchup bool) {
 			log.Error("error unmarshalling", zap.Error(err))
 			return
 		}
+		messageSummary.Underlying.Summary = protojson.Format(&data)
 		if !catchup {
 			log.Info("received message", zap.String("data", data.String()))
 		}
@@ -219,6 +221,7 @@ func HandleRawPayload(ctx context.Context, payload []byte, catchup bool) {
 			log.Error("error unmarshalling", zap.Error(err))
 			return
 		}
+		messageSummary.Underlying.Summary = protojson.Format(&data)
 		if !catchup {
 			log.Info("received message", zap.String("data", data.String()))
 		}
@@ -238,6 +241,7 @@ func HandleRawPayload(ctx context.Context, payload []byte, catchup bool) {
 			log.Error("error unmarshalling", zap.Error(err))
 			return
 		}
+		messageSummary.Underlying.Summary = protojson.Format(&data)
 		if !catchup {
 			log.Info("received message", zap.String("data", data.String()))
 		}
@@ -253,6 +257,7 @@ func HandleRawPayload(ctx context.Context, payload []byte, catchup bool) {
 		if !catchup {
 			log.Info("received text message", zap.String("data", string(mp.Payload)))
 		}
+		messageSummary.Underlying.Summary = string(mp.Payload)
 		state.Chats.Add(
 			types.ParsedMessage[string]{
 				Underlying: string(mp.Payload),
@@ -268,6 +273,7 @@ func HandleRawPayload(ctx context.Context, payload []byte, catchup bool) {
 			log.Error("error unmarshalling", zap.Error(err))
 			return
 		}
+		messageSummary.Underlying.Summary = protojson.Format(&data)
 		if !catchup {
 			log.Info("received message", zap.String("data", data.String()))
 		}
@@ -286,6 +292,7 @@ func HandleRawPayload(ctx context.Context, payload []byte, catchup bool) {
 			log.Error("error unmarshalling", zap.Error(err))
 			return
 		}
+		messageSummary.Underlying.Summary = protojson.Format(&data)
 		if !catchup {
 			log.Info("received message", zap.String("data", data.String()))
 		}
@@ -296,13 +303,13 @@ func HandleRawPayload(ctx context.Context, payload []byte, catchup bool) {
 			log.Error("error unmarshalling", zap.Error(err))
 			return
 		}
+		messageSummary.Underlying.Summary = protojson.Format(&data)
 		if !catchup {
 			log.Info("received message", zap.String("data", data.String()))
 		}
 	default:
 		log.Error("unknown port number")
 	}
-	messageSummary.Underlying.Summary = protojson.Format(&serviceEnv)
 	state.AllMessages.Add(messageSummary)
 
 }
