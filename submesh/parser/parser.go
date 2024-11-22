@@ -60,7 +60,9 @@ func decode(encryptionKey []byte, encryptedData []byte, nonce []byte) (*meshtast
 	return &message, err
 }
 
-func HandleRawPayload(ctx context.Context, payload []byte) {
+var defaultKey []byte
+
+func HandleRawPayload(ctx context.Context, payload []byte, catchup bool) {
 	log := ctx.Value(contextkeys.Logger).(*zap.Logger)
 	state := ctx.Value(contextkeys.State).(*state.State)
 	var serviceEnv meshtastic.ServiceEnvelope
@@ -76,10 +78,13 @@ func HandleRawPayload(ctx context.Context, payload []byte) {
 	}
 
 	nonce := generateNonce(serviceEnv.Packet.Id, serviceEnv.Packet.From)
-	key, err := generateKey("1PG7OiApB1nwvP+rz05pAQ==")
-	if err != nil {
-		log.Error("error generating key", zap.Error(err))
-		return
+	if len(defaultKey) == 0 {
+		key, err := generateKey("1PG7OiApB1nwvP+rz05pAQ==")
+		if err != nil {
+			log.Error("error generating key", zap.Error(err))
+			return
+		}
+		defaultKey = key
 	}
 
 	var mp *meshtastic.Data
@@ -103,7 +108,7 @@ func HandleRawPayload(ctx context.Context, payload []byte) {
 	switch serviceEnv.Packet.GetPayloadVariant().(type) {
 	case *meshtastic.MeshPacket_Encrypted:
 		messageSummary.Underlying.Length = len(serviceEnv.Packet.GetEncrypted())
-		mp, err = decode(key, serviceEnv.Packet.GetEncrypted(), nonce)
+		mp, err = decode(defaultKey, serviceEnv.Packet.GetEncrypted(), nonce)
 		if err != nil {
 			log.Error("error decrypting message",
 				zap.Uint32("from", serviceEnv.Packet.From),
@@ -155,23 +160,29 @@ func HandleRawPayload(ctx context.Context, payload []byte) {
 		}
 		switch data.GetVariant().(type) {
 		case *meshtastic.Telemetry_AirQualityMetrics:
-			log.Info("received Air Quality telemetry", zap.Any("data", data.GetAirQualityMetrics()))
-			messageSummary.Underlying.Summary = protojson.Format(data.GetAirQualityMetrics())
+			if !catchup {
+				log.Info("received Air Quality telemetry", zap.Any("data", data.GetAirQualityMetrics()))
+			}
 		case *meshtastic.Telemetry_DeviceMetrics:
-			log.Info("received Device Metrics telemetry", zap.Any("data", data.GetDeviceMetrics()))
-			messageSummary.Underlying.Summary = protojson.Format(data.GetDeviceMetrics())
+			if !catchup {
+				log.Info("received Device Metrics telemetry", zap.Any("data", data.GetDeviceMetrics()))
+			}
 		case *meshtastic.Telemetry_EnvironmentMetrics:
-			log.Info("received Environment Metrics telemetry", zap.Any("data", data.GetEnvironmentMetrics()))
-			messageSummary.Underlying.Summary = protojson.Format(data.GetEnvironmentMetrics())
+			if !catchup {
+				log.Info("received Environment Metrics telemetry", zap.Any("data", data.GetEnvironmentMetrics()))
+			}
 		case *meshtastic.Telemetry_HealthMetrics:
-			log.Info("received Health Metrics telemetry", zap.Any("data", data.GetHealthMetrics()))
-			messageSummary.Underlying.Summary = protojson.Format(data.GetHealthMetrics())
+			if !catchup {
+				log.Info("received Health Metrics telemetry", zap.Any("data", data.GetHealthMetrics()))
+			}
 		case *meshtastic.Telemetry_LocalStats:
-			log.Info("received Local Stats telemetry", zap.Any("data", data.GetLocalStats()))
-			messageSummary.Underlying.Summary = protojson.Format(data.GetLocalStats())
+			if !catchup {
+				log.Info("received Local Stats telemetry", zap.Any("data", data.GetLocalStats()))
+			}
 		case *meshtastic.Telemetry_PowerMetrics:
-			log.Info("received Power Metrics telemetry", zap.Any("data", data.GetPowerMetrics()))
-			messageSummary.Underlying.Summary = protojson.Format(data.GetPowerMetrics())
+			if !catchup {
+				log.Info("received Power Metrics telemetry", zap.Any("data", data.GetPowerMetrics()))
+			}
 		default:
 			log.Error("unknown telemetry app message", zap.Any("variant", data.GetVariant()))
 		}
@@ -190,7 +201,9 @@ func HandleRawPayload(ctx context.Context, payload []byte) {
 			log.Error("error unmarshalling", zap.Error(err))
 			return
 		}
-		log.Info("received message", zap.String("data", data.String()))
+		if !catchup {
+			log.Info("received message", zap.String("data", data.String()))
+		}
 		state.Neighbors.Add(
 			types.ParsedMessage[meshtastic.NeighborInfo]{
 				Underlying: data,
@@ -199,7 +212,6 @@ func HandleRawPayload(ctx context.Context, payload []byte) {
 				To:         serviceEnv.Packet.To,
 				Channel:    serviceEnv.Packet.Channel,
 			}, fmt.Sprintf("%d", data.NodeId))
-		messageSummary.Underlying.Summary = protojson.Format(&data)
 	case meshtastic.PortNum_NODEINFO_APP:
 		var data meshtastic.User
 		err = proto.Unmarshal(mp.Payload, &data)
@@ -207,7 +219,9 @@ func HandleRawPayload(ctx context.Context, payload []byte) {
 			log.Error("error unmarshalling", zap.Error(err))
 			return
 		}
-		log.Info("received message", zap.String("data", data.String()))
+		if !catchup {
+			log.Info("received message", zap.String("data", data.String()))
+		}
 		state.Users.Add(
 			types.ParsedMessage[meshtastic.User]{
 				Underlying: data,
@@ -217,7 +231,6 @@ func HandleRawPayload(ctx context.Context, payload []byte) {
 				Channel:    serviceEnv.Packet.Channel,
 			},
 			fmt.Sprintf("%d", serviceEnv.Packet.From), data.Id, data.ShortName)
-		messageSummary.Underlying.Summary = protojson.Format(&data)
 	case meshtastic.PortNum_POSITION_APP:
 		var data meshtastic.Position
 		err = proto.Unmarshal(mp.Payload, &data)
@@ -225,8 +238,9 @@ func HandleRawPayload(ctx context.Context, payload []byte) {
 			log.Error("error unmarshalling", zap.Error(err))
 			return
 		}
-		log.Info("received message", zap.String("data", data.String()))
-		messageSummary.Underlying.Summary = protojson.Format(&data)
+		if !catchup {
+			log.Info("received message", zap.String("data", data.String()))
+		}
 		state.Positions.Add(
 			types.ParsedMessage[meshtastic.Position]{
 				Underlying: data,
@@ -236,7 +250,9 @@ func HandleRawPayload(ctx context.Context, payload []byte) {
 				Channel:    serviceEnv.Packet.Channel,
 			}, fmt.Sprintf("%d", serviceEnv.Packet.From))
 	case meshtastic.PortNum_TEXT_MESSAGE_APP:
-		log.Info("received text message", zap.String("data", string(mp.Payload)))
+		if !catchup {
+			log.Info("received text message", zap.String("data", string(mp.Payload)))
+		}
 		state.Chats.Add(
 			types.ParsedMessage[string]{
 				Underlying: string(mp.Payload),
@@ -245,7 +261,6 @@ func HandleRawPayload(ctx context.Context, payload []byte) {
 				To:         serviceEnv.Packet.To,
 				Channel:    serviceEnv.Packet.Channel,
 			}, "last")
-		messageSummary.Underlying.Summary = string(mp.Payload)
 	case meshtastic.PortNum_TRACEROUTE_APP:
 		var data meshtastic.RouteDiscovery
 		err = proto.Unmarshal(mp.Payload, &data)
@@ -253,8 +268,9 @@ func HandleRawPayload(ctx context.Context, payload []byte) {
 			log.Error("error unmarshalling", zap.Error(err))
 			return
 		}
-		log.Info("received message", zap.String("data", data.String()))
-		messageSummary.Underlying.Summary = protojson.Format(&data)
+		if !catchup {
+			log.Info("received message", zap.String("data", data.String()))
+		}
 		state.Traceroutes.Add(
 			types.ParsedMessage[meshtastic.RouteDiscovery]{
 				Underlying: data,
@@ -270,8 +286,9 @@ func HandleRawPayload(ctx context.Context, payload []byte) {
 			log.Error("error unmarshalling", zap.Error(err))
 			return
 		}
-		log.Info("received message", zap.String("data", data.String()))
-		messageSummary.Underlying.Summary = protojson.Format(&data)
+		if !catchup {
+			log.Info("received message", zap.String("data", data.String()))
+		}
 	case meshtastic.PortNum_ROUTING_APP:
 		var data meshtastic.Routing
 		err = proto.Unmarshal(mp.Payload, &data)
@@ -279,11 +296,13 @@ func HandleRawPayload(ctx context.Context, payload []byte) {
 			log.Error("error unmarshalling", zap.Error(err))
 			return
 		}
-		log.Info("received message", zap.String("data", data.String()))
-		messageSummary.Underlying.Summary = protojson.Format(&data)
+		if !catchup {
+			log.Info("received message", zap.String("data", data.String()))
+		}
 	default:
 		log.Error("unknown port number")
 	}
+	messageSummary.Underlying.Summary = protojson.Format(&serviceEnv)
 	state.AllMessages.Add(messageSummary)
 
 }
@@ -300,5 +319,5 @@ func HandleMQTTMessage(ctx context.Context, pr paho.PublishReceived) {
 		pr.Packet.Topic, pr.Packet.Payload,
 	)
 
-	HandleRawPayload(ctx, pr.Packet.Payload)
+	HandleRawPayload(ctx, pr.Packet.Payload, false)
 }

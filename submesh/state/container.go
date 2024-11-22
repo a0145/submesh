@@ -18,7 +18,7 @@ const defaultLimit = 5000
 
 func NewHistoricalWithLastByPK[T any]() HistoricalWithLastByPK[T] {
 	return HistoricalWithLastByPK[T]{
-		all:    make([]types.ParsedMessage[T], 0),
+		all:    make([]types.ParsedMessage[T], 0, defaultLimit),
 		lastBy: make(map[string]*types.ParsedMessage[T]),
 		Limit:  defaultLimit,
 	}
