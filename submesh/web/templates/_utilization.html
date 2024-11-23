@@ -5,21 +5,20 @@
     <canvas id="utilization_chart" ></canvas>
 </div>
 <script>
-const ctx = document.getElementById('utilization_chart');
 
 var utilization = [];
 var airtime = [];
 var labels = [];
 {{ range $TelemetryArr }}
-    labels.push({{.RxTime | unixToHourDate}});
     {{ $deviceMetrics := (.Underlying.GetDeviceMetrics) }}
     {{ if $deviceMetrics }}
+    labels.push({{.RxTime | unixToHourDate}});
     {{ if $deviceMetrics.ChannelUtilization }}utilization.push({{ $deviceMetrics.ChannelUtilization}});{{end}}
     {{ if $deviceMetrics.AirUtilTx }}airtime.push({{ $deviceMetrics.AirUtilTx}});{{end}}
     {{end}}
 {{ end }}
 
-new Chart(ctx, {
+new Chart(document.getElementById('utilization_chart'), {
     type: 'line',
     data: {
         labels: labels,

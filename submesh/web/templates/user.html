@@ -53,8 +53,7 @@ No info yet
 {{end}}
 </td>
 
-<td valign="top">
-  <h4>Node Info</h4>
+<td valign="top" colspan="2">
   {{if .User}}
   <table>
     <tr>
@@ -171,6 +170,33 @@ No info yet
 {{end}}
 
 </td>
+</tr>
+<tr>
+  <td>
+    <h4>Environment Metrics</h4>
+{{ if .Telemetry}}
+{{template "environment_chart" (arr .Telemetry)}}
+{{else}}
+No info yet
+{{end}}
+</td>
+<td>
+  <h4>Pressure Metrics</h4>
+{{ if .Telemetry}}
+{{template "pressure_chart" (arr .Telemetry)}}
+{{else}}
+No info yet
+{{end}}
+</td>
+<td>
+  <h4>Device Power Metrics</h4>
+{{ if .Telemetry}}
+{{template "powermetrics_chart" (arr .Telemetry)}}
+{{else}}
+No info yet
+{{end}}
+</td>
+
 </tr>
 </table>
 <table>

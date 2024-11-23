@@ -1,0 +1,48 @@
+{{define "pressure_chart"}}
+{{ $TelemetryArr := index . 0 }}
+
+<div style="width: 500px;">
+    <canvas id="pressure_chart" ></canvas>
+</div>
+<script>
+
+var pressure = [];
+var labels = [];
+{{ range $TelemetryArr }}
+    {{ $metrics := (.Underlying.GetEnvironmentMetrics) }}
+    {{ if $metrics }}
+    labels.push({{.RxTime | unixToHourDate}});
+    {{ if $metrics.BarometricPressure }}pressure.push({{ $metrics.BarometricPressure}});{{end}}
+    {{end}}
+{{ end }}
+
+new Chart(document.getElementById('pressure_chart'), {
+    type: 'line',
+    data: {
+        labels: labels,
+        datasets: [
+        {
+            label: 'Pressure',
+            data: pressure,
+            borderWidth: 1,
+            fill: 'origin'
+        }
+    ]
+    },
+    
+    options: {
+        
+    scales: {
+        y: {
+            beginAtZero: true,
+        },
+        x: {
+            display: false,
+            
+        }
+    }
+    }
+});
+</script>
+   
+{{end}}

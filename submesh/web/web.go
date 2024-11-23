@@ -355,10 +355,10 @@ func StartServer(ctx context.Context) {
 
 		if user != nil {
 			intId = hexCodeToId(user.Underlying.Id)
-			position = ctx.Value(contextkeys.State).(*state.State).Positions.LastBy(fmt.Sprintf("%d", intId))
-			telemetry = ctx.Value(contextkeys.State).(*state.State).Telemetry.LastBy(fmt.Sprintf("%d", intId))
-			allTelemetry = ctx.Value(contextkeys.State).(*state.State).Telemetry.FilteredByString("From", fmt.Sprintf("%d", intId))
 		}
+		position = ctx.Value(contextkeys.State).(*state.State).Positions.LastBy(fmt.Sprintf("%d", intId))
+		telemetry = ctx.Value(contextkeys.State).(*state.State).Telemetry.LastBy(fmt.Sprintf("%d", intId))
+		allTelemetry = ctx.Value(contextkeys.State).(*state.State).Telemetry.FilteredByString("From", fmt.Sprintf("%d", intId))
 		limitTo := viper.GetInt("submesh.all_limit")
 		from := sdb.AllMessages.FilteredByString("From", fmt.Sprintf("%d", intId))
 		if len(from) > limitTo {

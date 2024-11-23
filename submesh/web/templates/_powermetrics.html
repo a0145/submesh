@@ -1,0 +1,57 @@
+{{define "powermetrics_chart"}}
+{{ $TelemetryArr := index . 0 }}
+
+<div style="width: 500px;">
+    <canvas id="powermetrics_chart" ></canvas>
+</div>
+<script>
+
+var batteryLevel = [];
+var voltage = [];
+var labels = [];
+{{ range $TelemetryArr }}
+    {{ $metrics := (.Underlying.GetDeviceMetrics) }}
+    {{ if $metrics }}
+    labels.push({{.RxTime | unixToHourDate}});
+    {{ if $metrics.BatteryLevel }}batteryLevel.push({{ $metrics.BatteryLevel}});{{end}}
+    {{ if $metrics.Voltage }}voltage.push({{ $metrics.Voltage}});{{end}}
+    {{end}}
+{{ end }}
+
+new Chart(document.getElementById('powermetrics_chart'), {
+    type: 'line',
+    data: {
+        labels: labels,
+        datasets: [
+        
+        {
+            label: 'Voltage',
+            data: voltage,
+            borderWidth: 1,
+            fill: 'origin'
+        },
+        {
+            label: 'Battery Level',
+            data: batteryLevel,
+            borderWidth: 1,
+            fill: 'origin'
+        }
+    ]
+    },
+    
+    options: {
+        
+    scales: {
+        y: {
+            beginAtZero: true,
+        },
+        x: {
+            display: false,
+            
+        }
+    }
+    }
+});
+</script>
+   
+{{end}}
