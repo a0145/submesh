@@ -293,7 +293,7 @@ func StartServer(ctx context.Context) {
 			return longNameFromId(ctx.Value(contextkeys.State).(*state.State), id)
 		},
 		"unixToHourDate": func(t uint32) string {
-			return time.Unix(int64(t), 0).Format("2006-01-02 15:04")
+			return time.Unix(int64(t), 0).Format("2006-01-02 15:04 PM")
 		},
 		"lastHeard": func(id uint32) string {
 			return lastHeard(ctx.Value(contextkeys.State).(*state.State), id)
