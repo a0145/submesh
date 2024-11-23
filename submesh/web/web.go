@@ -370,8 +370,9 @@ func StartServer(ctx context.Context) {
 		if len(to) > limitTo {
 			to = to[:limitTo]
 		}
-		if len(allTelemetry) > limitTo {
-			allTelemetry = allTelemetry[:(limitTo * 4)]
+		metricsLimit := (limitTo * 2)
+		if len(allTelemetry) > metricsLimit {
+			allTelemetry = allTelemetry[:metricsLimit]
 		}
 		c.HTML(http.StatusOK, "templates/user.html", gin.H{
 			"QueryUser":     id,
