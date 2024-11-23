@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 	"submesh/submesh/contextkeys"
@@ -359,6 +360,7 @@ func StartServer(ctx context.Context) {
 		position = ctx.Value(contextkeys.State).(*state.State).Positions.LastBy(fmt.Sprintf("%d", intId))
 		telemetry = ctx.Value(contextkeys.State).(*state.State).Telemetry.LastBy(fmt.Sprintf("%d", intId))
 		allTelemetry = ctx.Value(contextkeys.State).(*state.State).Telemetry.FilteredByString("From", fmt.Sprintf("%d", intId))
+		slices.Reverse(allTelemetry)
 		limitTo := viper.GetInt("submesh.all_limit")
 		from := sdb.AllMessages.FilteredByString("From", fmt.Sprintf("%d", intId))
 		if len(from) > limitTo {
