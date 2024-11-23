@@ -40,7 +40,12 @@ new Chart(document.getElementById('powermetrics_chart'), {
     },
     
     options: {
-        
+        elements: {
+                    point:{
+                        radius: 0
+                    }
+                }
+,
     scales: {
         y: {
             beginAtZero: true,

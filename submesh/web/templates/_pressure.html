@@ -31,7 +31,12 @@ new Chart(document.getElementById('pressure_chart'), {
     },
     
     options: {
-        
+        elements: {
+                    point:{
+                        radius: 0
+                    }
+                }
+,
     scales: {
         y: {
             beginAtZero: true,

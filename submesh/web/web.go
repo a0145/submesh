@@ -293,7 +293,7 @@ func StartServer(ctx context.Context) {
 			return longNameFromId(ctx.Value(contextkeys.State).(*state.State), id)
 		},
 		"unixToHourDate": func(t uint32) string {
-			return time.Unix(int64(t), 0).Format("02/01/2006 15:04")
+			return time.Unix(int64(t), 0).Format("2006-01-02 15:04")
 		},
 		"lastHeard": func(id uint32) string {
 			return lastHeard(ctx.Value(contextkeys.State).(*state.State), id)
@@ -369,6 +369,9 @@ func StartServer(ctx context.Context) {
 		to := sdb.AllMessages.FilteredByString("To", fmt.Sprintf("%d", intId))
 		if len(to) > limitTo {
 			to = to[:limitTo]
+		}
+		if len(allTelemetry) > limitTo {
+			allTelemetry = allTelemetry[:(limitTo * 4)]
 		}
 		c.HTML(http.StatusOK, "templates/user.html", gin.H{
 			"QueryUser":     id,

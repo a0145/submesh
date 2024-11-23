@@ -37,7 +37,12 @@ new Chart(document.getElementById('utilization_chart'), {
     },
     
     options: {
-        
+        elements: {
+                    point:{
+                        radius: 0
+                    }
+                }
+,
     scales: {
         y: {
             beginAtZero: true,
